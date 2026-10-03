@@ -6,18 +6,30 @@ const { categories, products } = require('./seed');
 
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'zonorox123';
-const DB_FILE = path.join(__dirname, 'data', 'db.json');
+const ON_VERCEL = !!process.env.VERCEL;
+const DB_FILE = ON_VERCEL
+  ? path.join('/tmp', 'zenorox-db.json')
+  : path.join(__dirname, 'data', 'db.json');
 
 // ---------- tiny JSON database ----------
+function emptyDB() {
+  return { categories, products, orders: [], nextOrder: 1001 };
+}
 function loadDB() {
-  if (!fs.existsSync(DB_FILE)) {
-    fs.mkdirSync(path.dirname(DB_FILE), { recursive: true });
-    fs.writeFileSync(DB_FILE, JSON.stringify({ categories, products, orders: [], nextOrder: 1001 }, null, 2));
+  try {
+    if (!fs.existsSync(DB_FILE)) {
+      fs.mkdirSync(path.dirname(DB_FILE), { recursive: true });
+      fs.writeFileSync(DB_FILE, JSON.stringify(emptyDB(), null, 2));
+    }
+    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+  } catch {
+    return emptyDB();
   }
-  return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
 }
 let db = loadDB();
-const save = () => fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+const save = () => {
+  try { fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2)); } catch { /* Vercel /tmp is best-effort */ }
+};
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -185,4 +197,8 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => console.log(`Zonorox running on http://localhost:${PORT}  (admin: /admin, password: ${ADMIN_PASSWORD})`));
+if (!ON_VERCEL) {
+  app.listen(PORT, () => console.log(`Zenorox running on http://localhost:${PORT}  (admin: /admin, password: ${ADMIN_PASSWORD})`));
+}
+
+module.exports = app;
