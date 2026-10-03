@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Zenorox Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0f172a;--muted:#5b6475;--line:#e6e9f0;--soft:#f4f6fb;--brand:#1f4bff;--sale:#ff3d57;--ok:#12a150}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--soft);color:var(--ink)}
+h1,h2,h3{font-family:'Sora',sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.top{background:var(--ink);color:#fff;padding:14px 24px;display:flex;justify-content:space-between;align-items:center}
+.top b{font-family:'Sora';font-size:20px}.top b span{color:#7e9bff}
+.tabs{display:flex;gap:6px;padding:14px 24px 0;flex-wrap:wrap}
+.tabs button{padding:10px 18px;border-radius:10px 10px 0 0;border:0;background:#e6e9f0;font-weight:700}
+.tabs button.on{background:#fff}
+.panel{background:#fff;margin:0 24px 24px;padding:24px;border-radius:0 14px 14px 14px;min-height:60vh}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:24px}
+.stat{background:var(--soft);border-radius:12px;padding:18px}.stat small{color:var(--muted)}.stat b{display:block;font-size:26px;font-family:'Sora'}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{color:var(--muted);font-weight:500}
+td img{width:48px;height:48px;border-radius:8px;object-fit:cover}
+.btn{padding:9px 16px;border-radius:9px;border:0;background:var(--brand);color:#fff;font-weight:700}
+.btn.s{background:var(--soft);color:var(--ink)}.btn.d{background:#ffe7ea;color:#9c1229}
+.bar{display:flex;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap}
+.bar input{padding:10px 14px;border:1px solid var(--line);border-radius:10px;min-width:240px}
+.login{max-width:360px;margin:12vh auto;background:#fff;padding:30px;border-radius:16px;display:grid;gap:14px}
+.login input,.f input,.f select,.f textarea{padding:11px 13px;border:1px solid var(--line);border-radius:10px;width:100%}
+.modal{position:fixed;inset:0;background:rgba(10,15,35,.55);display:none;place-items:center;padding:16px;z-index:10}
+.modal.on{display:grid}
+.f{background:#fff;border-radius:16px;padding:24px;width:min(640px,100%);max-height:92vh;overflow:auto;display:grid;gap:12px}
+.f label{display:grid;gap:5px;font-weight:700;font-size:13px}
+.f .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.f .chk{display:flex;gap:18px;font-weight:500}.f .chk label{display:flex;gap:6px;align-items:center;font-weight:500;font-size:14px}.f .chk input{width:auto}
+.err{color:#9c1229;font-weight:700}
+.pill{padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--soft)}
+.low{color:var(--sale);font-weight:700}
+.scroll{overflow:auto}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const $=s=>document.querySelector(s), root=$('#root');
+const rs=n=>'Rs. '+Number(n).toLocaleString('en-PK');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let token=sessionStorage.getItem('zx_admin')||'', products=[], cats=[], orders=[], tab='dash';
+const api=async(u,o={})=>{const r=await fetch(u,{...o,headers:{'Content-Type':'application/json',Authorization:'Bearer '+token,...(o.headers||{})}});const d=await r.json().catch(()=>({}));if(r.status===401&&token){logout();throw new Error('Session expired')}if(!r.ok)throw new Error(d.error||'Error');return d};
+function logout(){token='';sessionStorage.removeItem('zx_admin');loginView()}
+function loginView(){
+  root.innerHTML=`<form class="login" id="lf"><h2>Zenorox admin</h2><input type="password" id="pw" placeholder="Admin password" required autofocus><div class="err" id="le"></div><button class="btn">Sign in</button></form>`;
+  $('#lf').onsubmit=async e=>{e.preventDefault();try{const r=await api('/api/admin/login',{method:'POST',body:JSON.stringify({password:$('#pw').value})});token=r.token;sessionStorage.setItem('zx_admin',token);start()}catch(err){$('#le').textContent=err.message}};
+}
+async function start(){
+  cats=await (await fetch('/api/categories')).json();
+  await load(); shell();
+}
+async function load(){
+  const all=await (await fetch('/api/products?limit=60')).json();
+  products=all.items;
+  for(let p=2;p<=all.pages;p++)products=products.concat((await (await fetch('/api/products?limit=60&page='+p)).json()).items);
+  orders=await api('/api/admin/orders');
+}
+function shell(){
+  root.innerHTML=`<div class="top"><b>zeno<span>rox</span> admin</b><span><a href="/" style="color:#cdd5ff;margin-right:16px">View store</a><button class="btn s" id="lo">Log out</button></span></div>
+  <div class="tabs">${[['dash','Dashboard'],['prod','Products'],['ord','Orders']].map(([k,l])=>`<button data-t="${k}" class="${tab===k?'on':''}">${l}</button>`).join('')}</div><div class="panel" id="pn"></div>
+  <div class="modal" id="md"></div>`;
+  $('#lo').onclick=logout;
+  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;shell()});
+  ({dash,prod,ord})[tab]();
+}
+async function dash(){
+  const s=await api('/api/admin/stats');
+  $('#pn').innerHTML=`<div class="stats"><div class="stat"><small>Revenue</small><b>${rs(s.revenue)}</b></div><div class="stat"><small>Orders</small><b>${s.orders}</b></div><div class="stat"><small>Pending orders</small><b>${s.pending}</b></div><div class="stat"><small>Products</small><b>${s.products}</b></div></div>
+  <h3 style="margin-bottom:10px">Low stock</h3>${s.lowStock.length?`<table><tr><th>Product</th><th>Left</th></tr>${s.lowStock.map(p=>`<tr><td>${esc(p.name)}</td><td class="low">${p.stock}</td></tr>`).join('')}</table>`:'<p>All products have healthy stock.</p>'}`;
+}
+function prod(filter=''){
+  const list=products.filter(p=>p.name.toLowerCase().includes(filter.toLowerCase()));
+  $('#pn').innerHTML=`<div class="bar"><input id="pf" placeholder="Search products" value="${esc(filter)}"><button class="btn" id="np">Add product</button></div><div class="scroll"><table><tr><th></th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Flags</th><th></th></tr>
+  ${list.map(p=>`<tr><td><img src="${esc(p.images[0])}" alt=""></td><td>${esc(p.name)}</td><td>${esc(p.category)}</td><td>${rs(p.price)}</td><td class="${p.stock<=5?'low':''}">${p.stock}</td><td>${p.trending?'<span class="pill">Trending</span> ':''}${p.featured?'<span class="pill">Featured</span>':''}</td>
+  <td style="white-space:nowrap"><button class="btn s" data-e="${p.id}">Edit</button> <button class="btn d" data-d="${p.id}">Delete</button></td></tr>`).join('')}</table></div>`;
+  const f=$('#pf');f.oninput=()=>{prod(f.value);const n=$('#pf');n.focus();n.setSelectionRange(n.value.length,n.value.length)};
+  $('#np').onclick=()=>form();
+  document.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>form(products.find(p=>p.id==b.dataset.e)));
+  document.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{const p=products.find(x=>x.id==b.dataset.d);if(!confirm('Delete "'+p.name+'"? This cannot be undone.'))return;await api('/api/admin/products/'+p.id,{method:'DELETE'});await load();prod()});
+}
+function form(p={}){
+  const m=$('#md');m.classList.add('on');
+  m.innerHTML=`<form class="f" id="pf2"><h3>${p.id?'Edit product':'Add product'}</h3><div class="err" id="fe"></div>
+  <label>Name<input name="name" required value="${esc(p.name)}"></label>
+  <div class="row"><label>Category<select name="category">${cats.map(c=>`<option value="${c.slug}" ${p.category===c.slug?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><label>Stock<input name="stock" type="number" min="0" value="${p.stock??10}"></label></div>
+  <div class="row"><label>Price (Rs.)<input name="price" type="number" min="1" required value="${p.price||''}"></label><label>Old price (Rs.)<input name="oldPrice" type="number" min="0" value="${p.oldPrice||''}"></label></div>
+  <label>Description<textarea name="description" rows="3">${esc(p.description)}</textarea></label>
+  <label>Image URLs (one per line)<textarea name="images" rows="3">${esc((p.images||[]).join('\n'))}</textarea></label>
+  <div class="row"><label>Tags (comma separated)<input name="tags" value="${esc((p.tags||[]).join(', '))}"></label><label>Trending source<select name="source">${['','Daraz','Alibaba'].map(s=>`<option ${p.source===s?'selected':''} value="${s}">${s||'None'}</option>`).join('')}</select></label></div>
+  <div class="chk"><label><input type="checkbox" name="trending" ${p.trending?'checked':''}>Trending</label><label><input type="checkbox" name="featured" ${p.featured?'checked':''}>Featured on home</label></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn s" id="cx">Cancel</button><button class="btn">Save product</button></div></form>`;
+  $('#cx').onclick=()=>m.classList.remove('on');
+  $('#pf2').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target),b=Object.fromEntries(fd);b.trending=fd.has('trending');b.featured=fd.has('featured');
+    try{await api(p.id?'/api/admin/products/'+p.id:'/api/admin/products',{method:p.id?'PUT':'POST',body:JSON.stringify(b)});m.classList.remove('on');await load();prod()}catch(err){$('#fe').textContent=err.message}};
+}
+function ord(){
+  $('#pn').innerHTML=orders.length?`<div class="scroll"><table><tr><th>#</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th></tr>
+  ${orders.map(o=>`<tr><td><b>${o.id}</b></td><td>${new Date(o.createdAt).toLocaleString()}</td><td>${esc(o.customer.name)}<br><small>${esc(o.customer.phone)}<br>${esc(o.customer.address)}, ${esc(o.customer.city)}</small></td>
+  <td>${o.items.map(i=>esc(i.name)+' x'+i.qty).join('<br>')}</td><td>${rs(o.total)}</td><td>${esc(o.payment)}</td>
+  <td><select data-o="${o.id}">${['Pending','Confirmed','Shipped','Delivered','Cancelled'].map(s=>`<option ${o.status===s?'selected':''}>${s}</option>`).join('')}</select></td></tr>`).join('')}</table></div>`:'<p>No orders yet. New orders from the store will show here.</p>';
+  document.querySelectorAll('[data-o]').forEach(s=>s.onchange=async()=>{await api('/api/admin/orders/'+s.dataset.o,{method:'PUT',body:JSON.stringify({status:s.value})});await load();ord()});
+}
+token?start().catch(loginView):loginView();
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zenorox - Shoes, Watches, Frames, Laptop Stands & More</title>
+<meta name="description" content="Zenorox is Pakistan's trending products store. Shop shoes, watches, frames, laptop stands and more with cash on delivery.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="topbar">Free delivery on orders above Rs. 5,000 &nbsp;|&nbsp; Cash on delivery all over Pakistan</div>
+
+<header class="header">
+  <div class="wrap header-row">
+    <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu">&#9776;</button>
+    <a href="#/" class="logo" aria-label="Zenorox home">zeno<span>rox</span></a>
+    <nav class="nav" id="nav"></nav>
+    <form class="search" id="searchForm" role="search">
+      <input id="searchInput" type="search" placeholder="Search shoes, watches, frames..." aria-label="Search products">
+    </form>
+    <a href="#/track" class="icon-btn txt-btn">Track order</a>
+    <button class="icon-btn cart-btn" id="cartBtn" aria-label="Open cart">Cart <b id="cartCount">0</b></button>
+  </div>
+</header>
+
+<main id="app" class="wrap"></main>
+
+<footer class="footer">
+  <div class="wrap foot-grid">
+    <div>
+      <a href="#/" class="logo light">zeno<span>rox</span></a>
+      <p>Trending products picked from what Pakistan is buying right now. Honest prices, fast delivery.</p>
+    </div>
+    <div><h4>Shop</h4><div id="footCats"></div></div>
+    <div><h4>Help</h4><a href="#/track">Track your order</a><a href="#/shop?trending=1">Trending now</a><a href="/admin">Admin login</a></div>
+    <div><h4>Pay your way</h4><p>Cash on delivery, JazzCash, Easypaisa and bank transfer.</p></div>
+  </div>
+  <div class="wrap copy">&copy; <span id="yr"></span> Zenorox. All rights reserved.</div>
+</footer>
+
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" aria-label="Shopping cart" aria-hidden="true">
+  <div class="drawer-head"><h3>Your cart</h3><button class="icon-btn" id="closeCart" aria-label="Close cart">&times;</button></div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-foot" id="drawerFoot"></div>
+</aside>
+<div class="toast" id="toast" role="status"></div>
+<script src="/app.js"></script>
+</body>
+</html>
